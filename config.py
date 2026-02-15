@@ -12,7 +12,7 @@ class Settings(BaseSettings):
 
     google_api_key: str = ""
     llm_model: str = "gemini-2.0-flash"
-    embedding_model: str = "models/embedding-001"
+    embedding_model: str = "gemini-embedding-001"
     chunk_size: int = 1000
     chunk_overlap: int = 200
     top_k: int = 4
