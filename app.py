@@ -19,11 +19,17 @@ st.markdown(
 
 # ── API key handling ────────────────────────────────────────────────────────
 # Priority: Streamlit secrets > env var > sidebar input
-api_key = ""
-if hasattr(st, "secrets") and "GOOGLE_API_KEY" in st.secrets:
-    api_key = st.secrets["GOOGLE_API_KEY"]
-elif settings.google_api_key:
-    api_key = settings.google_api_key
+google_key = ""
+groq_key = ""
+
+if hasattr(st, "secrets"):
+    google_key = st.secrets.get("GOOGLE_API_KEY", "")
+    groq_key = st.secrets.get("GROQ_API_KEY", "")
+
+if not google_key and settings.google_api_key:
+    google_key = settings.google_api_key
+if not groq_key and settings.groq_api_key:
+    groq_key = settings.groq_api_key
 
 # ── Session state init ──────────────────────────────────────────────────────
 if "messages" not in st.session_state:
@@ -35,21 +41,33 @@ if "processed_files" not in st.session_state:
 with st.sidebar:
     st.title("RAG AI Chatbot")
 
-    # API key input
-    st.subheader("API Key")
-    if api_key:
+    # API keys
+    st.subheader("API Keys")
+
+    if groq_key:
+        st.success("Groq API key: Configured")
+    else:
+        groq_key = st.text_input(
+            "Groq API key (for LLM)",
+            type="password",
+            help="Get a free key at https://console.groq.com/keys",
+        )
+
+    if google_key:
         st.success("Google API key: Configured")
     else:
-        api_key = st.text_input(
-            "Enter Google Gemini API key",
+        google_key = st.text_input(
+            "Google API key (for embeddings)",
             type="password",
             help="Get a free key at https://aistudio.google.com/apikey",
         )
 
-    if api_key:
-        settings.google_api_key = api_key
+    if groq_key:
+        settings.groq_api_key = groq_key
+    if google_key:
+        settings.google_api_key = google_key
 
-    api_ready = bool(api_key)
+    api_ready = bool(groq_key and google_key)
 
     st.divider()
 
@@ -96,7 +114,7 @@ with st.sidebar:
 
     # Config display
     with st.expander("Configuration"):
-        st.text(f"LLM: {settings.llm_model}")
+        st.text(f"LLM: {settings.llm_model} (Groq)")
         st.text(f"Embeddings: {settings.embedding_model}")
         st.text(f"Chunk size: {settings.chunk_size}")
         st.text(f"Chunk overlap: {settings.chunk_overlap}")
@@ -153,4 +171,4 @@ if prompt := st.chat_input("Ask a question about your documents...", disabled=no
     })
 
 elif not api_ready:
-    st.info("Please enter your Google Gemini API key in the sidebar to get started. Get a free key at https://aistudio.google.com/apikey")
+    st.info("Please add both API keys in the sidebar. Get free keys at https://console.groq.com/keys (Groq) and https://aistudio.google.com/apikey (Google).")
