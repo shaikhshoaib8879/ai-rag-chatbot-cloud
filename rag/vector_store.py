@@ -1,17 +1,16 @@
 import chromadb
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_huggingface import HuggingFaceEmbeddings
 
 from config import settings
 
 COLLECTION_NAME = "rag_documents"
 
 
-def _get_embeddings() -> GoogleGenerativeAIEmbeddings:
-    return GoogleGenerativeAIEmbeddings(
-        model=settings.embedding_model,
-        google_api_key=settings.google_api_key,
+def _get_embeddings() -> HuggingFaceEmbeddings:
+    return HuggingFaceEmbeddings(
+        model_name=settings.embedding_model,
     )
 
 

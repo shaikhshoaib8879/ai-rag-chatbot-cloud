@@ -18,16 +18,11 @@ st.markdown(
 )
 
 # ── API key handling ────────────────────────────────────────────────────────
-# Priority: Streamlit secrets > env var > sidebar input
-google_key = ""
 groq_key = ""
 
 if hasattr(st, "secrets"):
-    google_key = st.secrets.get("GOOGLE_API_KEY", "")
     groq_key = st.secrets.get("GROQ_API_KEY", "")
 
-if not google_key and settings.google_api_key:
-    google_key = settings.google_api_key
 if not groq_key and settings.groq_api_key:
     groq_key = settings.groq_api_key
 
@@ -41,33 +36,22 @@ if "processed_files" not in st.session_state:
 with st.sidebar:
     st.title("RAG AI Chatbot")
 
-    # API keys
-    st.subheader("API Keys")
+    # API key
+    st.subheader("API Key")
 
     if groq_key:
         st.success("Groq API key: Configured")
     else:
         groq_key = st.text_input(
-            "Groq API key (for LLM)",
+            "Enter Groq API key",
             type="password",
             help="Get a free key at https://console.groq.com/keys",
         )
 
-    if google_key:
-        st.success("Google API key: Configured")
-    else:
-        google_key = st.text_input(
-            "Google API key (for embeddings)",
-            type="password",
-            help="Get a free key at https://aistudio.google.com/apikey",
-        )
-
     if groq_key:
         settings.groq_api_key = groq_key
-    if google_key:
-        settings.google_api_key = google_key
 
-    api_ready = bool(groq_key and google_key)
+    api_ready = bool(groq_key)
 
     st.divider()
 
@@ -115,7 +99,7 @@ with st.sidebar:
     # Config display
     with st.expander("Configuration"):
         st.text(f"LLM: {settings.llm_model} (Groq)")
-        st.text(f"Embeddings: {settings.embedding_model}")
+        st.text(f"Embeddings: {settings.embedding_model} (local)")
         st.text(f"Chunk size: {settings.chunk_size}")
         st.text(f"Chunk overlap: {settings.chunk_overlap}")
         st.text(f"Top-K results: {settings.top_k}")
@@ -171,4 +155,4 @@ if prompt := st.chat_input("Ask a question about your documents...", disabled=no
     })
 
 elif not api_ready:
-    st.info("Please add both API keys in the sidebar. Get free keys at https://console.groq.com/keys (Groq) and https://aistudio.google.com/apikey (Google).")
+    st.info("Please enter your Groq API key in the sidebar to get started. Get a free key at https://console.groq.com/keys")

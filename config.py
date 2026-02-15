@@ -10,10 +10,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    google_api_key: str = ""
     groq_api_key: str = ""
     llm_model: str = "llama-3.1-8b-instant"
-    embedding_model: str = "gemini-embedding-001"
+    embedding_model: str = "all-MiniLM-L6-v2"
     chunk_size: int = 1000
     chunk_overlap: int = 200
     top_k: int = 3
