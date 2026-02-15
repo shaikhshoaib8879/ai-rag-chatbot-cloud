@@ -1,6 +1,6 @@
 from collections.abc import Generator
 
-from langchain_core.messages import AIMessageChunk, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessageChunk, HumanMessage
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 from config import settings
@@ -33,47 +33,45 @@ def _format_chat_history(messages: list[dict]) -> str:
     return "\n".join(lines)
 
 
-def _build_messages(query: str, chat_history: list[dict]) -> tuple[list, list]:
-    """Build LLM messages and retrieve source docs."""
+def _build_prompt(query: str, chat_history: list[dict]) -> tuple[str, str, list]:
+    """Build system instruction and user query. Returns (system, user_query, sources)."""
     stats = get_collection_stats()
     source_results = []
 
     if stats["total_chunks"] == 0:
-        messages = [
-            SystemMessage(content=NO_DOCS_PROMPT),
-            HumanMessage(content=query),
-        ]
-    else:
-        source_results = similarity_search(query)
-        context = _format_context(source_results)
-        history_str = _format_chat_history(chat_history)
+        return NO_DOCS_PROMPT, query, source_results
 
-        system_content = RAG_SYSTEM_PROMPT.format(
-            context=context, chat_history=history_str
-        )
-        messages = [
-            SystemMessage(content=system_content),
-            HumanMessage(content=query),
-        ]
+    source_results = similarity_search(query)
+    context = _format_context(source_results)
+    history_str = _format_chat_history(chat_history)
 
-    return messages, source_results
+    system_content = RAG_SYSTEM_PROMPT.format(
+        context=context, chat_history=history_str
+    )
+    return system_content, query, source_results
 
 
 def stream_response(
     query: str, chat_history: list[dict]
 ) -> tuple[Generator[str, None, None], list]:
     """Run the RAG pipeline and return a (text_stream, source_docs) tuple."""
+    system_prompt, user_query, source_results = _build_prompt(query, chat_history)
+
     llm = ChatGoogleGenerativeAI(
         model=settings.llm_model,
         google_api_key=settings.google_api_key,
         temperature=settings.temperature,
+        system_instruction=system_prompt,
     )
 
-    messages, source_results = _build_messages(query, chat_history)
+    messages = [HumanMessage(content=user_query)]
 
     def generate() -> Generator[str, None, None]:
-        for chunk in llm.stream(messages):
-            if isinstance(chunk, AIMessageChunk) and chunk.content:
-                yield chunk.content
+        try:
+            for chunk in llm.stream(messages):
+                if isinstance(chunk, AIMessageChunk) and chunk.content:
+                    yield chunk.content
+        except Exception as e:
+            yield f"\n\n**Error:** {e}"
 
     return generate(), source_results
