@@ -33,9 +33,14 @@ def similarity_search(query: str, k: int | None = None) -> list[tuple[Document, 
     """Search for similar chunks. Returns (document, score) pairs.
 
     Scores are normalized to 0-1 (higher = more similar).
+    Auto-clears stale data from incompatible embedding models.
     """
     db = _get_chroma()
-    results = db.similarity_search_with_score(query, k=k or settings.top_k)
+    try:
+        results = db.similarity_search_with_score(query, k=k or settings.top_k)
+    except Exception:
+        clear_collection()
+        return []
     return [(doc, max(0.0, 1.0 - distance / 2.0)) for doc, distance in results]
 
 
